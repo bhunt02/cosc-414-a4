@@ -1,4 +1,5 @@
 import {mat4, vec3} from "../glMatrix/src/index.js";
+import {TWO_PI, PI} from "./util.mjs";
 
 /* ------------------------------------------- PROJECTION VARIABLES --------------------------------------------------*/
 export const projectionMatrixNames = ["u_ModelViewProjectionMatrix","u_NormalMatrix"];
@@ -22,6 +23,7 @@ function generateProjectionMatrices(app, model) {
     let camera = mat4.create();
     mat4.rotateY(camera,camera,-phi);
     mat4.rotateX(camera,camera,-theta);
+
     mat4.translate(camera,camera,vec3.fromValues(0,0,radius));
 
     let view = mat4.invert(mat4.create(),camera);

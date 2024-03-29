@@ -24,7 +24,7 @@ creating the WebGL context in `./app/src/util.mjs`.
 At the end of this document I've left citations for any algorithms/sources that were not derived from
 the provided libraries for the course.
 
-Gallery
+## Gallery
 
 <table>
 <tr>
@@ -63,7 +63,7 @@ Gallery
 </tr>
 </table>
 
-Citations
+## Citations
 * Align object to vector:
   * https://stackoverflow.com/a/10923592
   * `Used in: ./app/src/Classes/Objects/Bacterium.mjs`

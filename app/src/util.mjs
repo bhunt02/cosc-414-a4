@@ -107,6 +107,8 @@ export function initializeWebGL(app, clear_color) {
     }
     if (app.settings.gl_enable.cull_face) {
         gl.enable(gl.CULL_FACE);
+        gl.frontFace(gl.CW);
+        gl.cullFace(gl.BACK)
     }
     if (app.settings.picking) {
         app = useFrameBuffer(app);

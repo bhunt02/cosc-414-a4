@@ -150,10 +150,10 @@ function main() {
         t_0 = t_1;
 
         // If player hasn't hit any bacteria in 1 second, award 1 point to the game.
-        if (STATE.game_settings.last_hit > 1000) {
+        /*if (STATE.game_settings.last_hit > 1000) {
             changeGamePoints(GAME_POINTS += 1);
             STATE.game_settings.last_hit = 0;
-        }
+        }*/
 
         if (!STATE.game_settings.paused) {
             BaseObject.Objects.filter(v => v instanceof Bacterium).forEach((bacterium) => {
@@ -168,7 +168,7 @@ function main() {
 
                 if (bacterium.reachedThreshold === false && bacterium.size >= Bacterium.maxSize) {
                     bacterium.reachedThreshold = true;
-                    changeGamePoints(GAME_POINTS += 2); // Game gains two points each time a bacterium reaches the threshold
+                    //changeGamePoints(GAME_POINTS += 2); // Game gains two points each time a bacterium reaches the threshold
                 }
             })
 
@@ -280,14 +280,14 @@ function generateBacteria(speciesCount) {
                 y: y+surface.position.y,
                 z: z+surface.position.z
             },
-
+            0,
+            Utilities.HSVtoRGB(hueIncrement*i,1,1),
+            surface,
             {
                 x: x,
                 y: y,
                 z: z
             },
-            0,
-            Utilities.HSVtoRGB(hueIncrement*i,1,1)
         );
     }
 }

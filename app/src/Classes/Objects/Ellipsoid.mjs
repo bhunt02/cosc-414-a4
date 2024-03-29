@@ -37,21 +37,33 @@ export class Ellipsoid extends BaseObject {
         default : //language=glsl
         `
         uniform vec3 u_Color3;
+        uniform vec3 u_ABC;
+        uniform vec3 u_Position3;
+        uniform float u_Radius;
         
-        attribute vec3 a_Position3;
-        attribute vec3 a_Normal3;
+        attribute float a_Phi;
+        attribute float a_Theta;
         
         void main() {
-            vec4 pos = vec4(
-                a_Position3,
+            vec4 normal = vec4(
+                (u_Radius * sin(a_Phi) * cos(a_Theta))/u_ABC.x,
+                (u_Radius * cos(a_Phi))/u_ABC.z,
+                (u_Radius * sin(a_Phi) * sin(a_Theta))/u_ABC.y,
                 1.0
             );
             
-            gl_Position = u_ModelViewProjectionMatrix * pos;
-    
-            gl_PointSize = 10.0;
+            vec4 pos = vec4(
+                u_Position3.x + normal.x,
+                u_Position3.y + normal.y,
+                u_Position3.z + normal.z,
+                1.0
+            );
             
-            vec4 transformedNormal = u_NormalMatrix * vec4(a_Normal3, 1.0);
+            normal = normalize(normal);
+            
+            gl_Position = u_ModelViewProjectionMatrix * pos;
+            
+            vec4 transformedNormal = u_NormalMatrix * normal;
             float directionalRatio = max(dot(transformedNormal.xyz, normalize(u_directionalVector)), 0.0);
             v_Lighting = u_ambientLight + (u_directionalLightColor * directionalRatio);
         }
@@ -60,20 +72,31 @@ export class Ellipsoid extends BaseObject {
         `
         uniform vec4 u_ObjectId4;
         
-        attribute vec3 a_Position3;
-        attribute vec3 a_Normal3;
+        uniform vec3 u_ABC;
+        uniform vec3 u_Position3;
+        uniform float u_Radius;
+
+        attribute float a_Phi;
+        attribute float a_Theta;
         
         void main() {
-            vec4 pos = vec4(
-                a_Position3,
+            vec4 normal = vec4(
+                (u_Radius * sin(a_Phi) * cos(a_Theta))/u_ABC.x,
+                (u_Radius * cos(a_Phi))/u_ABC.z,
+                (u_Radius * sin(a_Phi) * sin(a_Theta))/u_ABC.y,
                 1.0
             );
-            
-            gl_Position = u_ModelViewProjectionMatrix * pos;
-    
-            gl_PointSize = 10.0;
 
-            vec4 transformedNormal = u_NormalMatrix * vec4(a_Normal3, 1.0);
+            vec4 pos = vec4(
+                u_Position3.x + normal.x,
+                u_Position3.y + normal.y,
+                u_Position3.z + normal.z,
+                1.0
+            );
+
+            gl_Position = u_ModelViewProjectionMatrix * pos;
+
+            vec4 transformedNormal = u_NormalMatrix * normal;
             float directionalRatio = max(dot(transformedNormal.xyz, normalize(u_directionalVector)), 0.0);
             v_Lighting = u_ambientLight + (u_directionalLightColor * directionalRatio);
             v_Lighting = vec3(1,1,1);
@@ -104,18 +127,18 @@ export class Ellipsoid extends BaseObject {
 
 
     static attributeNames = {
-        default: ["a_Position3", "a_Normal3"],
-        picking: ["a_Position3", "a_Normal3"]
+        default: ["a_Theta", "a_Phi"],
+        picking: ["a_Theta", "a_Phi"]
     }
     static uniformNames = {
-        default: ["u_Color3"],
-        picking: ["u_ObjectId4"]
+        default: ["u_Color3","u_Position3","u_ABC","u_Radius"],
+        picking: ["u_ObjectId4","u_Position3","u_ABC","u_Radius"]
     };
 
     radius = null;
     segments = {
         horizontal: 60,
-        vertical: 60,
+        vertical: 30,
     };
     angle_spans = {
         horizontal: TWO_PI,
@@ -126,8 +149,8 @@ export class Ellipsoid extends BaseObject {
         b: 1.0,
         c: 1.0
     };
-    vertices = null;
-    normals = null;
+    thetas = null;
+    phis = null;
     indices = null;
     wires = null;
     regenerate = false;
@@ -144,15 +167,15 @@ export class Ellipsoid extends BaseObject {
         let horizontalAngle_Inc = this.angle_spans.horizontal/horizontalSegments,
             verticalAngle_Inc = this.angle_spans.vertical/verticalSegments;
 
-        let vertices = [],
-            normals = [],
+        let thetas = [],
+            phis = [],
             indices = [],
             wires = [];
 
         for (let i = 0; i <= verticalSegments; ++i) {
             let phi = (i * verticalAngle_Inc);
 
-            let idx0 = (i * horizontalSegments), // start of this (i-th) longitudinal strip
+            let idx0 = i * (horizontalSegments + 1), // start of this (i-th) longitudinal strip
                 idx1 = idx0 + horizontalSegments + 1; // beginning of next longitudinal strip
 
             for (let j = 0; j <= horizontalSegments; ++j, ++idx0, ++idx1) {
@@ -161,17 +184,8 @@ export class Ellipsoid extends BaseObject {
                 let idx2 = idx0 + 1, // next-index-to-right from idx0
                     idx3 = idx1 + 1; // next-index-to-right from idx1
 
-                let z = (this.radius * Math.sin(phi) * Math.cos(theta))/this.denominators.a,
-                    x = (this.radius * Math.sin(phi) * Math.sin(theta))/this.denominators.b,
-                    y = (this.radius * Math.cos(phi))/this.denominators.c;
-
-                normals.push(x,y,z);
-
-                vertices.push(
-                    (x+this.position.x),
-                    (y+this.position.y),
-                    (z+this.position.z)
-                );
+                thetas.push(theta);
+                phis.push(phi);
 
                 wires.push(idx0,idx1);
 
@@ -179,7 +193,7 @@ export class Ellipsoid extends BaseObject {
                     indices.push(idx0,idx1,idx2);
                     wires.push(idx0,idx2);
                 }
-                if (i !== verticalSegments) {
+                if (i !== (verticalSegments-1)) {
                     indices.push(idx2, idx1, idx3);
                 }
             }
@@ -187,8 +201,8 @@ export class Ellipsoid extends BaseObject {
 
         this.indices = Uint16Array.from(indices);
         this.wires = Uint16Array.from(wires);
-        this.vertices = Float32Array.from(vertices);
-        this.normals = Float32Array.from(normals);
+        this.thetas = Float32Array.from(thetas);
+        this.phis = Float32Array.from(phis);
         this.buffers = {};
     }
 
@@ -243,21 +257,24 @@ export class Ellipsoid extends BaseObject {
             );
         }
 
+        gl.uniform3fv(variableLocations["u_ABC"],[this.denominators.a,this.denominators.b,this.denominators.c]);
+        gl.uniform3fv(variableLocations["u_Position3"],[this.position.x,this.position.y,this.position.z]);
+        gl.uniform1f(variableLocations["u_Radius"],this.radius);
+
         // Attributes
         let bufferSettings = {
             bufferType : gl.ARRAY_BUFFER,
             drawMethod : gl.STATIC_DRAW,
-            size : 3,
-            stride: 3,
+            size : 1,
+            stride: 0,
             offset: 0,
             normalized: false,
             dataType : gl.FLOAT,
             dataSize: Float32Array.BYTES_PER_ELEMENT,
         }
 
-        Utilities.loadBuffer(gl, "a_Position3", this.vertices, bufferSettings, this.buffers, variableLocations);
-        bufferSettings.normalized = true;
-        Utilities.loadBuffer(gl, "a_Normal3", this.normals, bufferSettings, this.buffers, variableLocations);
+        Utilities.loadBuffer(gl, "a_Theta", this.thetas, bufferSettings, this.buffers, variableLocations);
+        Utilities.loadBuffer(gl, "a_Phi", this.phis, bufferSettings, this.buffers, variableLocations);
 
         bufferSettings = {
             bufferType: gl.ELEMENT_ARRAY_BUFFER,
@@ -270,7 +287,7 @@ export class Ellipsoid extends BaseObject {
         if (args?.wireframe) {
             gl.polygonOffset(0.2, 0.2);
 
-            gl.uniform3fv(variableLocations["u_Color3"], [this.color.r / 2, this.color.g / 2, this.color.b / 2]);
+            gl.uniform3fv(variableLocations["u_Color3"], [this.color.r / 1.25, this.color.g / 1.25, this.color.b / 1.25]);
 
             Utilities.loadBuffer(gl, "index_Lines", this.wires, bufferSettings, this.buffers);
             gl.drawElements(gl.LINES, this.wires.length, gl.UNSIGNED_SHORT, 0);
