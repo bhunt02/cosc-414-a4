@@ -18,7 +18,7 @@ const VSHADER_START =
         uniform vec3 u_directionalLightColor;
         uniform vec3 u_directionalVector;
 
-        varying vec3 v_Lighting;
+        varying vec4 transformedNormal;
     `
 
 /* All fragment shaders will have this as a stem */
@@ -27,7 +27,11 @@ const FSHADER_START =
     `
         precision mediump float;
 
-        varying vec3 v_Lighting;
+        uniform vec3 u_ambientLight;
+        uniform vec3 u_directionalLightColor;
+        uniform vec3 u_directionalVector;
+
+        varying vec4 transformedNormal;
     `
 
 const VSHADER_DEFAULT =

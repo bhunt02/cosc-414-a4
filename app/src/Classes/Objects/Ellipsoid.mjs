@@ -19,7 +19,7 @@ export class Ellipsoid extends BaseObject {
         },
         angle_spans : {
             horizontal: TWO_PI,
-            VERTICAL: PI,
+            vertical: PI,
         },
         segments: {
             horizontal: 60,
@@ -51,6 +51,7 @@ export class Ellipsoid extends BaseObject {
                 (u_Radius * sin(a_Phi) * sin(a_Theta))/u_ABC.y,
                 1.0
             );
+            transformedNormal = u_NormalMatrix * normal;
             
             vec4 pos = vec4(
                 u_Position3.x + normal.x,
@@ -62,10 +63,6 @@ export class Ellipsoid extends BaseObject {
             normal = normalize(normal);
             
             gl_Position = u_ModelViewProjectionMatrix * pos;
-            
-            vec4 transformedNormal = u_NormalMatrix * normal;
-            float directionalRatio = max(dot(transformedNormal.xyz, normalize(u_directionalVector)), 0.0);
-            v_Lighting = u_ambientLight + (u_directionalLightColor * directionalRatio);
         }
         `,
         picking : //language=glsl
@@ -86,6 +83,7 @@ export class Ellipsoid extends BaseObject {
                 (u_Radius * sin(a_Phi) * sin(a_Theta))/u_ABC.y,
                 1.0
             );
+            transformedNormal = u_NormalMatrix * normal;
 
             vec4 pos = vec4(
                 u_Position3.x + normal.x,
@@ -95,11 +93,6 @@ export class Ellipsoid extends BaseObject {
             );
 
             gl_Position = u_ModelViewProjectionMatrix * pos;
-
-            vec4 transformedNormal = u_NormalMatrix * normal;
-            float directionalRatio = max(dot(transformedNormal.xyz, normalize(u_directionalVector)), 0.0);
-            v_Lighting = u_ambientLight + (u_directionalLightColor * directionalRatio);
-            v_Lighting = vec3(1,1,1);
         }
         `,
     }
@@ -110,7 +103,9 @@ export class Ellipsoid extends BaseObject {
         uniform vec3 u_Color3;
 
         void main() {
-            gl_FragColor = vec4(u_Color3.xyz * v_Lighting, 1.0);
+            float directionalRatio = max(dot(transformedNormal.xyz, normalize(u_directionalVector)), 0.0);
+            vec3 lighting = u_ambientLight + (u_directionalLightColor * directionalRatio);
+            gl_FragColor = vec4(u_Color3.xyz * lighting, 1.0);
         }
         `,
         picking: //language=glsl
@@ -118,7 +113,10 @@ export class Ellipsoid extends BaseObject {
         uniform vec4 u_ObjectId4;
         
         void main() {
-            gl_FragColor = vec4(u_ObjectId4.xyz * v_Lighting, u_ObjectId4.w);
+            float directionalRatio = max(dot(transformedNormal.xyz, normalize(u_directionalVector)), 0.0);
+            vec3 lighting = u_ambientLight + (u_directionalLightColor * directionalRatio);
+            gl_FragColor = vec4(u_ObjectId4.xyz * lighting, u_ObjectId4.w);
+            
             gl_FragColor = u_ObjectId4;
         }
         `,
@@ -137,17 +135,17 @@ export class Ellipsoid extends BaseObject {
 
     radius = null;
     segments = {
-        horizontal: 60,
-        vertical: 30,
+        horizontal: Ellipsoid.Default.segments.horizontal,
+        vertical: Ellipsoid.Default.segments.vertical,
     };
     angle_spans = {
-        horizontal: TWO_PI,
-        vertical: PI,
+        horizontal: Ellipsoid.Default.angle_spans.horizontal,
+        vertical: Ellipsoid.Default.angle_spans.vertical,
     };
     denominators = {
-        a: 1.0,
-        b: 1.0,
-        c: 1.0
+        a: Ellipsoid.Default.denominators.a,
+        b: Ellipsoid.Default.denominators.b,
+        c: Ellipsoid.Default.denominators.c
     };
     thetas = null;
     phis = null;
@@ -162,8 +160,12 @@ export class Ellipsoid extends BaseObject {
     }
 
     generateVertices() {
-        let verticalSegments = this.segments.vertical,
-            horizontalSegments = this.segments.horizontal;
+        let shrinkageHorizontal = this.angle_spans.horizontal/TWO_PI,
+            shrinkageVertical = this.angle_spans.vertical/PI;
+
+        let verticalSegments = Math.floor(this.segments.vertical * shrinkageVertical),
+            horizontalSegments = Math.floor(this.segments.horizontal * shrinkageHorizontal);
+
         let horizontalAngle_Inc = this.angle_spans.horizontal/horizontalSegments,
             verticalAngle_Inc = this.angle_spans.vertical/verticalSegments;
 
@@ -193,7 +195,7 @@ export class Ellipsoid extends BaseObject {
                     indices.push(idx0,idx1,idx2);
                     wires.push(idx0,idx2);
                 }
-                if (i !== (verticalSegments-1)) {
+                if (i !== (verticalSegments)) {
                     indices.push(idx2, idx1, idx3);
                 }
             }

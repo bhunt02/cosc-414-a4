@@ -4,9 +4,9 @@
 */
 
 import {App, BaseObject, Sphere, Bacterium, Utilities} from "./app/src/index.mjs";
+import {TWO_PI, PI} from "./app/src/util.mjs";
 
 let STATE = new App();
-const TWO_PI = Utilities.TWO_PI;
 function wheel(event) {
     event.preventDefault();
     STATE.setZoom(STATE.settings.zoom.val + (event.deltaY * 0.001));
@@ -150,25 +150,25 @@ function main() {
         t_0 = t_1;
 
         // If player hasn't hit any bacteria in 1 second, award 1 point to the game.
-        /*if (STATE.game_settings.last_hit > 1000) {
+        if (STATE.game_settings.last_hit > 1000) {
             changeGamePoints(GAME_POINTS += 1);
             STATE.game_settings.last_hit = 0;
-        }*/
+        }
 
         if (!STATE.game_settings.paused) {
             BaseObject.Objects.filter(v => v instanceof Bacterium).forEach((bacterium) => {
                 if (bacterium.attacked) {
-                    bacterium.size -= STATE.game_settings.growth_rate/1000;
-                    if (bacterium.size <= Bacterium.attackedMin) {
+                    bacterium.arc -= STATE.game_settings.growth_rate/1000;
+                    if (bacterium.arc <= Bacterium.attackedMin) {
                         bacterium.attacked = false;
                     }
                 } else {
-                    bacterium.size += STATE.game_settings.growth_rate/10000;
+                    bacterium.arc += STATE.game_settings.growth_rate/10000;
                 }
 
-                if (bacterium.reachedThreshold === false && bacterium.size >= Bacterium.maxSize) {
+                if (bacterium.reachedThreshold === false && bacterium.size >= Bacterium.maxArc) {
                     bacterium.reachedThreshold = true;
-                    //changeGamePoints(GAME_POINTS += 2); // Game gains two points each time a bacterium reaches the threshold
+                    changeGamePoints(GAME_POINTS += 2); // Game gains two points each time a bacterium reaches the threshold
                 }
             })
 
@@ -268,7 +268,7 @@ function generateBacteria(speciesCount) {
     const hueIncrement = 0.95/speciesCount;
     let surface = BaseObject.Objects.filter((value) => value instanceof Sphere).at(0);
     for (let i = 0; i < speciesCount; i++) {
-        let phi = TWO_PI * Math.random(), theta = TWO_PI * Math.random();
+        let phi = TWO_PI * Math.random(), theta = PI * Math.random();
 
         let z = (surface.radius * Math.sin(phi) * Math.cos(theta))/surface.denominators.a,
             x = (surface.radius * Math.sin(phi) * Math.sin(theta))/surface.denominators.b,
@@ -276,18 +276,18 @@ function generateBacteria(speciesCount) {
 
         new Bacterium(
             {
-                x: x+surface.position.x,
-                y: y+surface.position.y,
-                z: z+surface.position.z
+                x: surface.position.x,
+                y: surface.position.y,
+                z: surface.position.z
             },
-            0,
-            Utilities.HSVtoRGB(hueIncrement*i,1,1),
-            surface,
             {
                 x: x,
                 y: y,
                 z: z
             },
+            0,
+            Utilities.HSVtoRGB(hueIncrement*i,1,1),
+            i
         );
     }
 }
