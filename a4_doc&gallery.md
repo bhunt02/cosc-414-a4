@@ -36,9 +36,9 @@ the provided libraries for the course.
 <tr>
 <td>
 
-* Implemented the functionality of the 2D version while turning into 3D
-* Bacteria are dynamic ellipsoids that grow on the surface of the sphere
-* Instead of creating static color difference, implemented lighting
+* Bacteria are spherical cone-like segments that grow on the surface
+* Retained lighting from last assignment position
+* Changed bacteria from ellipsoids to be more flat to fit assignment guidelines
 </td>
 </tr>
 <tr>

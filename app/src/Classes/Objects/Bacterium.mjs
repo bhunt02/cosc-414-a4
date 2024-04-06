@@ -4,7 +4,7 @@ import {mat4, vec3} from "../../../glMatrix/src/index.js"
 
 export class Bacterium extends Ellipsoid {
 
-    static maxArc = PI/2;
+    static maxArc = PI/3;
 
     static attackedMin = -0.5;
     arc = 0;
